@@ -12,9 +12,6 @@ public class ScoreScene : MonoBehaviour
     {
         score.text = "" + GameState.LastScore;
         maxScore.text = "" + GameState.MaxScore;
-
-        if (Input.GetKeyDown(KeyCode.Escape))
-            Application.Quit();
     }
 
     public void Restart()

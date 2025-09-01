@@ -5,20 +5,22 @@ using UnityEngine.UI;
 
 public class Player : MonoBehaviour
 {
-    new Rigidbody rigidbody;
     public AudioSource source;
     public AudioSource reverse;
     public AudioSource block;
     public AudioSource special;
-    private Vector3 force;
     public float speed = 3f;
-    private Material material;
     public Text pointText;
     public Slider specialSlider;
     public Image specialColor;
-    private float point = 0;
-    private float specialTime = 0;
-    private float pointScale = 1f;
+
+
+    private Rigidbody _rigidbody;
+    private Vector3 _force;
+    private Material _material;
+    private float _point = 0;
+    private float _specialTime = 0;
+    private float _pointScale = 1f;
     
     private void OnCollisionEnter(Collision collision)
     {
@@ -26,38 +28,43 @@ public class Player : MonoBehaviour
         block.Play();
     }
 
+    private void Awake()
+    {
+        _rigidbody = GetComponent<Rigidbody>();
+        _material = GetComponent<MeshRenderer>().materials[0];
+
+    }
+
     // Use this for initialization
     void Start()
     {
         GameState.LoadData();
         Physics.gravity = new Vector3(0, 0, 0);
-        force = new Vector3(0, -speed, 0);
-        if (rigidbody == null)
-            rigidbody = GetComponent<Rigidbody>();
-        material = GetComponent<MeshRenderer>().materials[0];
-        point = 0;
+        _force = new Vector3(0, -speed, 0);
+        _point = 0;
         source = GetComponent<AudioSource>();
         if (source != null)
         source.pitch = 1.0f;
     }
 
-    public void GoForce()
+    private void FixedUpdate()
     {
-        rigidbody.AddForce(force/10, ForceMode.Impulse);
+        _rigidbody.linearVelocity = _force;
     }
 
     public int GetScore()
     {
-        return (int)point;
+        return (int)_point;
     }
 
     void Update()
     {
         if (GameState.Pause) return;
-        point += Time.deltaTime * pointScale;
+        _point += Time.deltaTime * _pointScale;
+        _force += (_force.y > 0 ? Vector3.up : Vector3.down) * Time.deltaTime * 0.1f;
         pointText.text = GetScore() + "";
 
-        if ((int)(specialTime * 10) == 0)
+        if ((int)(_specialTime * 10) == 0)
         {
             specialSlider.enabled = false;
             specialSlider.gameObject.SetActive(false);
@@ -66,34 +73,27 @@ public class Player : MonoBehaviour
         {
             specialSlider.enabled = true;
             specialSlider.gameObject.SetActive(true);
-            specialSlider.value = specialTime / 10f;
+            specialSlider.value = _specialTime / 10f;
         }
-
-        GoForce();
-        if (Input.GetKeyDown(KeyCode.Escape))
-            Application.Quit();
-
     }
 
     public void GravityChange()
     {
-        Physics.gravity *= -1;
-        force *= -1;
-        rigidbody.velocity /= 3f;
+        _force *= -1;
+        _rigidbody.linearVelocity = Vector3.zero;
         reverse.Play();
-        GoForce();
     }
     public void ColorChange()
     {
         Color color = Color.white;
-        material.color = color;
+        _material.color = color;
         specialColor.color = color;
     }
 
     public void ColorChange(Color color)
     {
         special.Play();
-        material.color = color;
+        _material.color = color;
         specialColor.color = color;
     }
 
@@ -117,7 +117,7 @@ public class Player : MonoBehaviour
     {
         for (float i = dur; i >= 0; i -= 0.1f)
         {
-            specialTime = i;
+            _specialTime = i;
             yield return new WaitForSeconds(0.1f);
         }
     }
@@ -133,7 +133,7 @@ public class Player : MonoBehaviour
 
     public void Double(float dur)
     {
-        pointScale = 2f;
+        _pointScale = 2f;
         ColorChange(Color.yellow);
         StartCoroutine(Simple(dur));
     }
@@ -141,32 +141,29 @@ public class Player : MonoBehaviour
     IEnumerator Simple(float delayTime)
     {
         yield return SpecialDuration(delayTime);
-        pointScale = 1f;
+        _pointScale = 1f;
         ColorChange();
     }
 
     public void Center(float dur)
     {
-        force = new Vector3(0, 0, 0);
+        var prevForce = _force;
+        _force = new Vector3(0, 0, 0);
         transform.position = new Vector3(0, 6, 0);
-        rigidbody.velocity = new Vector3(0, 0, 0);
+        _rigidbody.linearVelocity = new Vector3(0, 0, 0);
         ColorChange(Color.cyan);
-        StartCoroutine(Fall(dur));
+        StartCoroutine(Fall(dur, prevForce));
     }
 
-    IEnumerator Fall(float delayTime)
+    IEnumerator Fall(float delayTime, Vector3 prevForce)
     {
         yield return SpecialDuration(delayTime);
-        force = new Vector3(0, -speed, 0);
+        _force = prevForce;
         RaycastHit hit;
-        if (Physics.Raycast(new Ray(transform.position, force), out hit, 10f))
+        if (!Physics.Raycast(new Ray(transform.position, _force), out hit, 10f))
         {
-            if (hit.transform.gameObject.tag == "Finish")
-            {
-                force = new Vector3(0, 1, 0);
-            }
+            _force *= -1;
         }
-        else force = new Vector3(0, speed, 0);
         ColorChange();
     }
 }

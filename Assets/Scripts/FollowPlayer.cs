@@ -14,7 +14,7 @@ public class FollowPlayer : MonoBehaviour
     {
         if (this.player == null)
         {
-            Player player = FindObjectOfType<Player>();
+            Player player = FindFirstObjectByType<Player>();
             this.player = player.gameObject.transform;
         }
 

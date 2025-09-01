@@ -14,6 +14,8 @@ public class BaseLoader : MonoBehaviour
     private Vector3 direction = new Vector3(-1, 0, 0);
     private readonly float speed = 7f;
     private readonly float maxWidth = 20f;
+
+    private float _speed = 0f;
     // Use this for initialization
     void Start()
     {
@@ -24,18 +26,20 @@ public class BaseLoader : MonoBehaviour
         downLoad.x = maxWidth;
         downMiddleLoad.x = maxWidth;
         upMiddleLoad.x = maxWidth;
+        _speed = speed;
     }
 
     private void Update()
     {
         if (go && !GameState.Pause)
         {
-            Time.timeScale += 0.0003f;
+            //Time.timeScale += 0.0003f;
+            _speed += Time.deltaTime * 0.1f;
 
             List<GameObject> deleteables = new List<GameObject>();
             foreach (GameObject obj in activeObjects)
             {
-                obj.transform.position += direction * speed * Time.deltaTime;
+                obj.transform.position += direction * _speed * Time.deltaTime;
                 if (obj.transform.position.x < -maxWidth) deleteables.Add(obj);
             }
             foreach (GameObject obj in deleteables)
